@@ -25,6 +25,16 @@
 		icon: 'HomeOutlined',
 	},
 	{
+		path: '/BAI1',
+		name: 'BAI1',
+		component: './BAI1',
+	},
+	{
+		path: '/BAI2',
+		name: 'BAI2',
+		component: './BAI2',
+	},
+	{
 		path: '/gioi-thieu',
 		name: 'About',
 		component: './TienIch/GioiThieu',
