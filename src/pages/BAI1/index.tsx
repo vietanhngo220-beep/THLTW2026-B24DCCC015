@@ -1,111 +1,131 @@
-import React, { useState, useEffect } from 'react';
-import { Card, InputNumber, Button, Typography, Space, Alert, Progress, Empty } from 'antd';
-import { ReloadOutlined, SendOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Button, Typography, Space, Tag, List, Divider, Row, Col, Statistic } from 'antd';
 
 const { Title, Text } = Typography;
 
-const GuessNumberGame: React.FC = () => {
-  const [targetNumber, setTargetNumber] = useState<number>(0);
-  const [currentGuess, setCurrentGuess] = useState<number | null>(null);
-  const [attempts, setAttempts] = useState<number>(0);
-  const [message, setMessage] = useState<{ type: 'info' | 'success' | 'error' | 'warning', content: string } | null>(null);
-  const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const [history, setHistory] = useState<number[]>([]);
+const OanTuTiFullLichSu = () => {
+  const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [score, setScore] = useState({ win: 0, draw: 0, lose: 0 });
 
-  const maxAttempts = 10;
+  const choices = [
+    { name: 'Kéo', icon: '✌️' },
+    { name: 'Búa', icon: '✊' },
+    { name: 'Bao', icon: '✋' },
+  ];
 
-  // Hàm khởi tạo game mới
-  const initGame = () => {
-    setTargetNumber(Math.floor(Math.random() * 100) + 1);
-    setAttempts(0);
-    setMessage({ type: 'info', content: 'Hãy nhập một số từ 1 đến 100 để bắt đầu!' });
-    setIsGameOver(false);
-    setCurrentGuess(null);
-    setHistory([]);
-  };
+  const play = (userSelection: any) => {
+    const computerSelection = choices[Math.floor(Math.random() * 3)];
+    let res = '';
 
-  useEffect(() => {
-    initGame();
-  }, []);
-
-  const handleGuess = () => {
-    if (currentGuess === null) return;
-
-    const newAttempts = attempts + 1;
-    setAttempts(newAttempts);
-    setHistory([currentGuess, ...history]);
-
-    if (currentGuess === targetNumber) {
-      setMessage({ type: 'success', content: 'Chúc mừng! Bạn đã đoán đúng!' });
-      setIsGameOver(true);
-    } else if (newAttempts >= maxAttempts) {
-      setMessage({ type: 'error', content: `Bạn đã hết lượt! Số đúng là [${targetNumber}].` });
-      setIsGameOver(true);
-    } else if (currentGuess < targetNumber) {
-      setMessage({ type: 'warning', content: 'Bạn đoán quá thấp!' });
+    if (userSelection.name === computerSelection.name) {
+      res = 'Hòa';
+      setScore(s => ({ ...s, draw: s.draw + 1 }));
+    } else if (
+      (userSelection.name === 'Kéo' && computerSelection.name === 'Bao') ||
+      (userSelection.name === 'Búa' && computerSelection.name === 'Kéo') ||
+      (userSelection.name === 'Bao' && computerSelection.name === 'Búa')
+    ) {
+      res = 'Thắng';
+      setScore(s => ({ ...s, win: s.win + 1 }));
     } else {
-      setMessage({ type: 'warning', content: 'Bạn đoán quá cao!' });
+      res = 'Thua';
+      setScore(s => ({ ...s, lose: s.lose + 1 }));
     }
-    setCurrentGuess(null);
+
+    const roundData = {
+      key: Date.now(),
+      // Số thứ tự ván = tổng số ván hiện tại + 1
+      index: history.length + 1, 
+      user: userSelection.name,
+      uIcon: userSelection.icon,
+      computer: computerSelection.name,
+      cIcon: computerSelection.icon,
+      res: res,
+    };
+
+    setResult(roundData);
+    setHistory([roundData, ...history]);
   };
 
   return (
-    <div style={{ padding: '50px', display: 'flex', justifyContent: 'center', background: '#f0f2f5', minHeight: '100vh' }}>
-      <Card style={{ width: 450, textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <Title level={2}>Trò chơi đoán số</Title>
-        <Text type="secondary">Hệ thống đã chọn một số từ 1 đến 100</Text>
+    <div style={{ padding: '30px', display: 'flex', justifyContent: 'center', background: '#f5f5f5', minHeight: '100vh' }}>
+      <Card style={{ width: 450, borderRadius: '8px' }} title="Trò chơi Oẳn Tù Tì">
         
-        <div style={{ margin: '20px 0' }}>
-          <Progress 
-            percent={(attempts / maxAttempts) * 100} 
-            format={() => `${attempts}/${maxAttempts} lượt`}
-            status={isGameOver && attempts < maxAttempts ? "success" : "active"}
-          />
+        <Row gutter={16} style={{ textAlign: 'center', marginBottom: 20 }}>
+          <Col span={8}><Statistic title="Thắng" value={score.win} valueStyle={{ color: '#52c41a' }} /></Col>
+          <Col span={8}><Statistic title="Hòa" value={score.draw} /></Col>
+          <Col span={8}><Statistic title="Thua" value={score.lose} valueStyle={{ color: '#ff4d4f' }} /></Col>
+        </Row>
+
+        <Divider>Chọn vũ khí</Divider>
+
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <Space size="large">
+            {choices.map(item => (
+              <Button 
+                key={item.name} 
+                onClick={() => play(item)}
+                style={{ height: 65, width: 65, fontSize: 28, borderRadius: '50%' }}
+              >
+                {item.icon}
+              </Button>
+            ))}
+          </Space>
         </div>
 
-        {message && (
-          <Alert message={message.content} type={message.type} showIcon style={{ marginBottom: '20px' }} />
+        {result && (
+          <div style={{ textAlign: 'center', padding: '15px', background: '#fff', border: '1px solid #eee', borderRadius: '8px', marginBottom: 20 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>Ván thứ {result.index}</Text>
+            <div style={{ fontSize: 24, marginTop: 5 }}>
+              <Space size="large">
+                <span>{result.uIcon}</span>
+                <Text strong type="secondary">VS</Text>
+                <span>{result.cIcon}</span>
+              </Space>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <Tag color={result.res === 'Thắng' ? 'green' : result.res === 'Thua' ? 'red' : 'default'} style={{ fontSize: 16 }}>
+                {result.res === 'Thắng' ? 'BẠN THẮNG' : result.res === 'Thua' ? 'BẠN THUA' : 'HÒA'}
+              </Tag>
+            </div>
+          </div>
         )}
 
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          <InputNumber
-            min={1}
-            max={100}
-            value={currentGuess}
-            onChange={(val) => setCurrentGuess(val)}
-            placeholder="Nhập số..."
-            style={{ width: '100%' }}
-            size="large"
-            disabled={isGameOver}
-            onPressEnter={handleGuess}
-          />
-
-          {!isGameOver ? (
-            <Button type="primary" block size="large" icon={<SendOutlined />} onClick={handleGuess}>
-              Đoán ngay
-            </Button>
-          ) : (
-            <Button type="primary" danger block size="large" icon={<ReloadOutlined />} onClick={initGame}>
-              Chơi lại
-            </Button>
-          )}
-        </Space>
-
-        <div style={{ marginTop: '20px', textAlign: 'left' }}>
-          <Text strong>Lịch sử dự đoán:</Text>
-          <div style={{ maxHeight: '100px', overflowY: 'auto', marginTop: '10px' }}>
-            {history.length > 0 ? (
-              history.map((num, index) => (
-                <Text key={index} keyboard style={{ marginRight: '5px' }}>{num}</Text>
-              ))
-            ) : (
-              <Text type="secondary"> Chưa có lượt dự đoán nào.</Text>
+        <Divider orientation="left">Lịch sử đấu ({history.length} ván)</Divider>
+        
+        <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '0 5px' }}>
+          <List
+            size="small"
+            dataSource={history}
+            renderItem={item => (
+              <List.Item>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text strong style={{ color: '#1890ff', width: 60 }}>Ván {item.index}</Text>
+                  <Text>{item.uIcon} vs {item.cIcon}</Text>
+                  <Tag color={item.res === 'Thắng' ? 'green' : item.res === 'Thua' ? 'red' : 'default'} style={{ width: 65, textAlign: 'center' }}>
+                    {item.res}
+                  </Tag>
+                </div>
+              </List.Item>
             )}
-          </div>
+          />
         </div>
+
+        {history.length > 0 && (
+          <Button 
+            type="link" 
+            block 
+            danger 
+            onClick={() => { setHistory([]); setResult(null); setScore({win:0, draw:0, lose:0}) }}
+            style={{ marginTop: 10 }}
+          >
+            Làm mới trò chơi
+          </Button>
+        )}
       </Card>
     </div>
   );
 };
 
-export default GuessNumberGame;
+export default OanTuTiFullLichSu;
