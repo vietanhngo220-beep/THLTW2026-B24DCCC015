@@ -3,7 +3,7 @@ import { Card, Button, Typography, Space, Tag, List, Divider, Row, Col, Statisti
 
 const { Title, Text } = Typography;
 
-const OanTuTiFullLichSu = () => {
+const OanTuTi = () => {
   const [result, setResult] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [score, setScore] = useState({ win: 0, draw: 0, lose: 0 });
@@ -128,4 +128,4 @@ const OanTuTiFullLichSu = () => {
   );
 };
 
-export default OanTuTiFullLichSu;
+export default OanTuTi;
