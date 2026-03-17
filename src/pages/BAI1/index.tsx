@@ -1,131 +1,178 @@
-import React, { useState } from 'react';
-import { Card, Button, Typography, Space, Tag, List, Divider, Row, Col, Statistic } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Tabs, Table, Button, Modal, Form, Input, Select, DatePicker, Tag, Rate, Row, Col, Statistic, message, List, Space, Typography, Divider, InputNumber } from 'antd';
+import { UserOutlined, CalendarOutlined, StarOutlined, BarChartOutlined, PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 
-const OanTuTi = () => {
-  const [result, setResult] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
-  const [score, setScore] = useState({ win: 0, draw: 0, lose: 0 });
+const BookingApp = () => {
+  const [form] = Form.useForm();
+  const [activeTab, setActiveTab] = useState('1');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const choices = [
-    { name: 'Kéo', icon: '✌️' },
-    { name: 'Búa', icon: '✊' },
-    { name: 'Bao', icon: '✋' },
-  ];
+  // --- QUẢN LÝ DỮ LIỆU ---
+  const [staffs, setStaffs] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
 
-  const play = (userSelection: any) => {
-    const computerSelection = choices[Math.floor(Math.random() * 3)];
-    let res = '';
+  // Load & Save LocalStorage
+  useEffect(() => {
+    const data = localStorage.getItem('booking_app_data');
+    if (data) {
+      const p = JSON.parse(data);
+      setStaffs(p.staffs || []);
+      setServices(p.services || []);
+      setBookings(p.bookings || []);
+      setReviews(p.reviews || []);
+    }
+  }, []);
 
-    if (userSelection.name === computerSelection.name) {
-      res = 'Hòa';
-      setScore(s => ({ ...s, draw: s.draw + 1 }));
-    } else if (
-      (userSelection.name === 'Kéo' && computerSelection.name === 'Bao') ||
-      (userSelection.name === 'Búa' && computerSelection.name === 'Kéo') ||
-      (userSelection.name === 'Bao' && computerSelection.name === 'Búa')
-    ) {
-      res = 'Thắng';
-      setScore(s => ({ ...s, win: s.win + 1 }));
-    } else {
-      res = 'Thua';
-      setScore(s => ({ ...s, lose: s.lose + 1 }));
+  useEffect(() => {
+    localStorage.setItem('booking_app_data', JSON.stringify({ staffs, services, bookings, reviews }));
+  }, [staffs, services, bookings, reviews]);
+
+  // --- LOGIC ĐẶT LỊCH & KIỂM TRA TRÙNG ---
+  const handleAddBooking = (values: any) => {
+    const { staffId, date, time } = values;
+    const dateStr = dayjs(date).format('YYYY-MM-DD');
+    const bookingTime = dateStr + ' ' + time;
+
+    // 1. Kiểm tra trùng lịch (Cùng nhân viên, cùng giờ)
+    const isDuplicate = bookings.find(b => b.staffId === staffId && b.time === bookingTime && b.status !== 'Hủy');
+    if (isDuplicate) {
+      message.error("Nhân viên này đã có lịch hẹn vào khung giờ này!");
+      return;
     }
 
-    const roundData = {
-      key: Date.now(),
-      // Số thứ tự ván = tổng số ván hiện tại + 1
-      index: history.length + 1, 
-      user: userSelection.name,
-      uIcon: userSelection.icon,
-      computer: computerSelection.name,
-      cIcon: computerSelection.icon,
-      res: res,
+    // 2. Kiểm tra giới hạn khách trong ngày
+    const appointmentsToday = bookings.filter(b => b.staffId === staffId && b.time.startsWith(dateStr) && b.status !== 'Hủy').length;
+    const staffLimit = staffs.find(s => s.id === staffId)?.limit || 5;
+    if (appointmentsToday >= staffLimit) {
+      message.error(`Nhân viên đã đạt giới hạn ${staffLimit} khách/ngày!`);
+      return;
+    }
+
+    const newBooking = {
+      ...values,
+      id: Date.now(),
+      time: bookingTime,
+      status: 'Chờ duyệt',
+      price: services.find(s => s.id === values.serviceId)?.price || 0
     };
 
-    setResult(roundData);
-    setHistory([roundData, ...history]);
+    setBookings([newBooking, ...bookings]);
+    message.success("Đặt lịch thành công!");
+    setIsModalOpen(false);
+    form.resetFields();
   };
 
+  // Tính doanh thu
+  const totalRevenue = bookings.filter(b => b.status === 'Hoàn thành').reduce((sum, b) => sum + b.price, 0);
+
   return (
-    <div style={{ padding: '30px', display: 'flex', justifyContent: 'center', background: '#f5f5f5', minHeight: '100vh' }}>
-      <Card style={{ width: 450, borderRadius: '8px' }} title="Trò chơi Oẳn Tù Tì">
-        
-        <Row gutter={16} style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Col span={8}><Statistic title="Thắng" value={score.win} valueStyle={{ color: '#52c41a' }} /></Col>
-          <Col span={8}><Statistic title="Hòa" value={score.draw} /></Col>
-          <Col span={8}><Statistic title="Thua" value={score.lose} valueStyle={{ color: '#ff4d4f' }} /></Col>
-        </Row>
+    <div style={{ padding: '20px', background: '#f0f2f5', minHeight: '100vh' }}>
+      <Card title={<Title level={3} style={{ margin: 0 }}>Hệ Thống Đặt Lịch Hẹn</Title>}>
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          
+          {/* 1. QUẢN LÝ NHÂN VIÊN & DỊCH VỤ */}
+          <TabPane tab={<span><UserOutlined /> Nhân viên & Dịch vụ</span>} key="1">
+            <Row gutter={24}>
+              <Col span={12}>
+                <Divider orientation="left">Nhân viên</Divider>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => {
+                  const name = prompt("Tên nhân viên:");
+                  const limit = Number(prompt("Giới hạn khách/ngày:", "5"));
+                  if (name) setStaffs([...staffs, { id: Date.now(), name, limit }]);
+                }}>Thêm nhân viên</Button>
+                <Table size="small" style={{ marginTop: 15 }} dataSource={staffs} rowKey="id" columns={[
+                  { title: 'Tên', dataIndex: 'name' },
+                  { title: 'Giới hạn', dataIndex: 'limit' }
+                ]} />
+              </Col>
+              <Col span={12}>
+                <Divider orientation="left">Dịch vụ</Divider>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => {
+                  const name = prompt("Tên dịch vụ:");
+                  const price = Number(prompt("Giá dịch vụ:"));
+                  if (name) setServices([...services, { id: Date.now(), name, price }]);
+                }}>Thêm dịch vụ</Button>
+                <Table size="small" style={{ marginTop: 15 }} dataSource={services} rowKey="id" columns={[
+                  { title: 'Dịch vụ', dataIndex: 'name' },
+                  { title: 'Giá', dataIndex: 'price', render: (p) => `${p.toLocaleString()}đ` }
+                ]} />
+              </Col>
+            </Row>
+          </TabPane>
 
-        <Divider>Chọn vũ khí</Divider>
+          {/* 2. QUẢN LÝ LỊCH HẸN */}
+          <TabPane tab={<span><CalendarOutlined /> Quản lý lịch hẹn</span>} key="2">
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Đặt lịch hẹn mới</Button>
+            <Table 
+              style={{ marginTop: 15 }} 
+              dataSource={bookings} 
+              rowKey="id" 
+              columns={[
+                { title: 'Khách hàng', dataIndex: 'customerName' },
+                { title: 'Thời gian', dataIndex: 'time' },
+                { title: 'Trạng thái', dataIndex: 'status', render: (s) => (
+                  <Tag color={s === 'Hoàn thành' ? 'green' : s === 'Hủy' ? 'red' : 'orange'}>{s}</Tag>
+                )},
+                { title: 'Thao tác', render: (_, record) => (
+                  <Select size="small" defaultValue={record.status} onChange={(val) => {
+                    setBookings(bookings.map(b => b.id === record.id ? { ...b, status: val } : b));
+                  }}>
+                    <Select.Option value="Xác nhận">Xác nhận</Select.Option>
+                    <Select.Option value="Hoàn thành">Hoàn thành</Select.Option>
+                    <Select.Option value="Hủy">Hủy</Select.Option>
+                  </Select>
+                )}
+              ]} 
+            />
+          </TabPane>
 
-        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Space size="large">
-            {choices.map(item => (
-              <Button 
-                key={item.name} 
-                onClick={() => play(item)}
-                style={{ height: 65, width: 65, fontSize: 28, borderRadius: '50%' }}
-              >
-                {item.icon}
-              </Button>
-            ))}
-          </Space>
-        </div>
-
-        {result && (
-          <div style={{ textAlign: 'center', padding: '15px', background: '#fff', border: '1px solid #eee', borderRadius: '8px', marginBottom: 20 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Ván thứ {result.index}</Text>
-            <div style={{ fontSize: 24, marginTop: 5 }}>
-              <Space size="large">
-                <span>{result.uIcon}</span>
-                <Text strong type="secondary">VS</Text>
-                <span>{result.cIcon}</span>
-              </Space>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Tag color={result.res === 'Thắng' ? 'green' : result.res === 'Thua' ? 'red' : 'default'} style={{ fontSize: 16 }}>
-                {result.res === 'Thắng' ? 'BẠN THẮNG' : result.res === 'Thua' ? 'BẠN THUA' : 'HÒA'}
-              </Tag>
-            </div>
-          </div>
-        )}
-
-        <Divider orientation="left">Lịch sử đấu ({history.length} ván)</Divider>
-        
-        <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '0 5px' }}>
-          <List
-            size="small"
-            dataSource={history}
-            renderItem={item => (
-              <List.Item>
-                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text strong style={{ color: '#1890ff', width: 60 }}>Ván {item.index}</Text>
-                  <Text>{item.uIcon} vs {item.cIcon}</Text>
-                  <Tag color={item.res === 'Thắng' ? 'green' : item.res === 'Thua' ? 'red' : 'default'} style={{ width: 65, textAlign: 'center' }}>
-                    {item.res}
-                  </Tag>
-                </div>
-              </List.Item>
-            )}
-          />
-        </div>
-
-        {history.length > 0 && (
-          <Button 
-            type="link" 
-            block 
-            danger 
-            onClick={() => { setHistory([]); setResult(null); setScore({win:0, draw:0, lose:0}) }}
-            style={{ marginTop: 10 }}
-          >
-            Làm mới trò chơi
-          </Button>
-        )}
+          {/* 3. THỐNG KÊ */}
+          <TabPane tab={<span><BarChartOutlined /> Thống kê</span>} key="3">
+            <Row gutter={16}>
+              <Col span={12}>
+                <Card><Statistic title="Doanh thu hoàn thành" value={totalRevenue} suffix="VNĐ" valueStyle={{ color: '#3f8600' }} /></Card>
+              </Col>
+              <Col span={12}>
+                <Card><Statistic title="Tổng số lịch hẹn" value={bookings.length} /></Card>
+              </Col>
+            </Row>
+          </TabPane>
+        </Tabs>
       </Card>
+
+      <Modal 
+        title="Đặt lịch hẹn mới" 
+        visible={isModalOpen} // Dùng visible để fix lỗi đỏ 'open'
+        onCancel={() => setIsModalOpen(false)} 
+        onOk={() => form.submit()}
+      >
+        <Form form={form} layout="vertical" onFinish={handleAddBooking}>
+          <Form.Item name="customerName" label="Tên khách hàng" rules={[{ required: true }]}><Input /></Form.Item>
+          <Form.Item name="serviceId" label="Dịch vụ" rules={[{ required: true }]}>
+            <Select placeholder="Chọn dịch vụ">{services.map(s => <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>)}</Select>
+          </Form.Item>
+          <Form.Item name="staffId" label="Nhân viên phục vụ" rules={[{ required: true }]}>
+            <Select placeholder="Chọn nhân viên">{staffs.map(s => <Select.Option key={s.id} value={s.id}>{s.name}</Select.Option>)}</Select>
+          </Form.Item>
+          <Form.Item name="date" label="Ngày hẹn" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} /></Form.Item>
+          <Form.Item name="time" label="Giờ hẹn" rules={[{ required: true }]}>
+            <Select placeholder="Chọn khung giờ">
+              <Select.Option value="09:00">09:00</Select.Option>
+              <Select.Option value="10:00">10:00</Select.Option>
+              <Select.Option value="14:00">14:00</Select.Option>
+              <Select.Option value="15:00">15:00</Select.Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
 
-export default OanTuTi;
+export default BookingApp;
