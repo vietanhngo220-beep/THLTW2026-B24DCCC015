@@ -30,9 +30,9 @@
 		component: './BAI1',
 	},
 	{
-		path: '/BAI2',
-		name: 'BAI2',
-		component: './BAI2',
+		path: '/QUANLY',
+		name: 'QUANLY',
+		component: './QUANLY',
 	},
 	{
 		path: '/gioi-thieu',
