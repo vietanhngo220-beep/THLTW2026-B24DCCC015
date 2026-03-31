@@ -35,6 +35,11 @@
 		component: './QUANLY',
 	},
 	{
+		path: '/QUANLICLB',
+		name: 'QUANLICLB',
+		component: './QUANLICLB',
+	},
+	{
 		path: '/gioi-thieu',
 		name: 'About',
 		component: './TienIch/GioiThieu',
