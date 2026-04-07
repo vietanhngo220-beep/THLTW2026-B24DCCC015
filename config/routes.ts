@@ -40,6 +40,11 @@
 		component: './QUANLICLB',
 	},
 	{
+		path: '/LAPKEHOACHDULICH',
+		name: 'LAPKEHOACHDULICH',
+		component: './LAPKEHOACHDULICH',
+	},
+	{
 		path: '/gioi-thieu',
 		name: 'About',
 		component: './TienIch/GioiThieu',
