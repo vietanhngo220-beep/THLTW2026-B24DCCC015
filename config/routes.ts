@@ -42,6 +42,13 @@
 		icon: 'OrderedListOutlined',
 		component: './TodoList',
 	},
+	{
+		path: '/quanlikhoahoc',
+		name: 'QuanLyKhoaHoc',
+		icon: 'OrderedListOutlined',
+		component: './QuanLyKhoaHoc',
+	},
+	
 
 	// DANH MUC HE THONG
 	// {
