@@ -48,6 +48,12 @@
 		icon: 'OrderedListOutlined',
 		component: './QuanLyKhoaHoc',
 	},
+	{
+		path: '/BlogApp',
+		name: 'BlogApp',
+		icon: 'OrderedListOutlined',
+		component: './BlogApp',
+	},
 	
 
 	// DANH MUC HE THONG
