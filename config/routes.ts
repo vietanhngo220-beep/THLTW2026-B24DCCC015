@@ -54,6 +54,12 @@
 		icon: 'OrderedListOutlined',
 		component: './BlogApp',
 	},
+	{
+		path: '/HealApp',
+		name: 'HealApp',
+		icon: 'OrderedListOutlined',
+		component: './HealApp',
+	},
 	
 
 	// DANH MUC HE THONG
