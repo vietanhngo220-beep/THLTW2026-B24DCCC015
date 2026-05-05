@@ -60,6 +60,12 @@
 		icon: 'OrderedListOutlined',
 		component: './HealApp',
 	},
+	{
+		path: '/KanbanApp',
+		name: 'KanbanApp',
+		icon: 'OrderedListOutlined',
+		component: './KanbanApp',
+	},
 	
 
 	// DANH MUC HE THONG
